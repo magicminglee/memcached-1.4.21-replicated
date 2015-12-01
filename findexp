@@ -1,0 +1,1 @@
+grep -wn --color $1 *.{h,c}
