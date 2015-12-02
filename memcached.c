@@ -108,6 +108,7 @@ static conn *rep_conn = NULL;
 static conn *rep_serv = NULL;
 static bool	rep_start = false;
 static bool is_master = false;
+static const int _BUFFER_SIZE = 1280*10240;
 static int  server_socket_replication(const int);
 static void server_close_replication();
 static int  replication_init();
@@ -4633,6 +4634,8 @@ static void drive_machine(conn *c) {
                         close(res);
                         fprintf(stderr, "replication: Can't Setting O_NONBLOCK: %s\n", strerror(errno));
                     }else{
+						setsockopt(res, SOL_SOCKET, SO_RCVBUF, (const int*)&_BUFFER_SIZE, sizeof(int));
+						setsockopt(res, SOL_SOCKET, SO_SNDBUF, (const int*)&_BUFFER_SIZE, sizeof(int));
                         server_close_replication();
                         //rep_conn = dispatch_conn_new(res, conn_read, EV_READ | EV_PERSIST, DATA_BUFFER_SIZE, false);
                         rep_conn = conn_new(res, conn_read, EV_READ | EV_PERSIST, DATA_BUFFER_SIZE, tcp_transport, main_base);
@@ -6283,6 +6286,9 @@ static int replication_client_init()
         server.sin_port   = htons(settings.rep_connect_port);
         if (settings.verbose > 0)
             fprintf(stderr,"replication: connect (peer=%s:%d)\n", inet_ntoa(settings.rep_addr), settings.rep_connect_port);
+
+		setsockopt(s, SOL_SOCKET, SO_RCVBUF, (const int*)&_BUFFER_SIZE, sizeof(int));
+		setsockopt(s, SOL_SOCKET, SO_SNDBUF, (const int*)&_BUFFER_SIZE, sizeof(int));
         if(connect(s,(struct sockaddr *)&server, sizeof(server)) == 0){
             c = conn_new(s, conn_repconnect, EV_WRITE | EV_PERSIST, DATA_BUFFER_SIZE, tcp_transport, main_base);
             if(c == NULL){
